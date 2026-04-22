@@ -11,7 +11,7 @@
     <div v-else class="row items-start no-wrap q-gutter-sm">
       <q-avatar
         size="26px"
-        color="teal-10"
+        color="teal-700"
         text-color="white"
         icon="smart_toy"
       />

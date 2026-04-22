@@ -1,5 +1,5 @@
 <template>
-  <q-card-section class="bg-teal-10 text-white" style="padding: 18px 20px">
+  <q-card-section class="bg-teal-700 text-white" style="padding: 18px 20px">
     <div class="row items-start justify-between no-wrap">
       <div class="column">
         <div class="row items-center q-gutter-md">
