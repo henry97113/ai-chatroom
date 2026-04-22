@@ -1,0 +1,40 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+context: |
+  This project is a single page application (SPA)
+  Tech stack: JavaScript, Vue.js 3, Quasar Framework
+  We use conventional commits
+  Domain: AI Chatroom
+
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+  design:
+    - Don't change UI design without discussing
+    - Provide 2-3 alternative solutions when multiple options exist
+  specs:
+    - Use Given/When/Then format
+    - Reference existing patterns before inventing new ones
+  tasks:
+    - Break tasks into chunks of max 30 minutes
+    - Always include estimated time for each task
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
