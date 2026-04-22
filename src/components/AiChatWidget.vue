@@ -301,6 +301,17 @@ function addAssistantMessage(content) {
   );
 }
 
+function addAssistantStreamingMessage() {
+  const streamingMessage = createMessage({
+    role: "assistant",
+    content: "",
+    status: "streaming",
+  });
+
+  messages.value.push(streamingMessage);
+  return streamingMessage.id;
+}
+
 function clearWelcomeGreetingTimeout() {
   if (welcomeGreetingTimeoutId === null) {
     return;
@@ -372,6 +383,39 @@ function getMessageById(messageId) {
   return messages.value.find((message) => message.id === messageId);
 }
 
+function removeMessageById(messageId) {
+  const messageIndex = messages.value.findIndex((message) => message.id === messageId);
+  if (messageIndex === -1) {
+    return;
+  }
+
+  messages.value.splice(messageIndex, 1);
+}
+
+function splitSuggestedQuestionContent(fullContent) {
+  const marker = "Suggested Question:";
+  const markerIndex = fullContent.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return {
+      mainContent: fullContent,
+      suggestedQuestionContent: "",
+    };
+  }
+
+  const mainContent = fullContent.slice(0, markerIndex).trimEnd();
+  const suggestedQuestionBody = fullContent
+    .slice(markerIndex + marker.length)
+    .trim();
+
+  return {
+    mainContent,
+    suggestedQuestionContent: suggestedQuestionBody.length > 0
+      ? `${marker} ${suggestedQuestionBody}`
+      : marker,
+  };
+}
+
 async function streamAssistantResponse(messageId, fullContent) {
   const message = getMessageById(messageId);
   if (!message) {
@@ -426,7 +470,26 @@ async function sendMessage() {
       RESPONSE_DELAY_MAX,
     );
     await sleep(responseDelay);
-    await streamAssistantResponse(assistantMessageId, response.content);
+
+    const { mainContent, suggestedQuestionContent } = splitSuggestedQuestionContent(
+      response.content,
+    );
+
+    if (mainContent.trim().length > 0) {
+      await streamAssistantResponse(assistantMessageId, mainContent);
+    } else {
+      removeMessageById(assistantMessageId);
+    }
+
+    if (suggestedQuestionContent.length > 0) {
+      const suggestedQuestionMessageId = addAssistantStreamingMessage();
+      await scrollToBottom();
+      await streamAssistantResponse(
+        suggestedQuestionMessageId,
+        suggestedQuestionContent,
+      );
+      await scrollToBottom();
+    }
   } finally {
     isResponding.value = false;
   }
