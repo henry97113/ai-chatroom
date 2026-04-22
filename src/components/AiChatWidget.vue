@@ -58,6 +58,21 @@
             </div>
           </div>
         </div>
+
+        <div
+          v-if="showIdleSuggestion"
+          class="ai-chat-idle-suggestion"
+        >
+          <Transition name="idle-suggestion-slide" mode="out-in">
+            <div
+              :key="currentIdleSuggestion.text"
+              class="ai-chat-idle-suggestion-inner row items-center no-wrap q-gutter-sm"
+            >
+              <q-icon :name="currentIdleSuggestion.icon" color="teal-4" size="16px" />
+              <span class="ai-chat-idle-suggestion-text">{{ currentIdleSuggestion.text }}</span>
+            </div>
+          </Transition>
+        </div>
       </div>
 
       <q-separator />
@@ -97,6 +112,7 @@
             color="teal-700"
             text-color="white"
             aria-label="Send message"
+            :loading="isResponding"
             :disable="!canSend"
             @click="sendMessage"
           />
@@ -119,7 +135,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref } from "vue";
 import MarkdownIt from "markdown-it";
 
 import { getMockAssistantResponse } from "src/services/aiChatService";
@@ -135,6 +151,22 @@ const RESPONSE_DELAY_MAX = 1500;
 const STREAM_CHUNK_MIN = 6;
 const STREAM_CHUNK_MAX = 14;
 const STREAM_STEP_DELAY = 18;
+const WELCOME_MESSAGE_DELAY_MS = 500;
+const WELCOME_MESSAGE_TEXT = "Welcome to Nitra AI!";
+const IDLE_SUGGESTION_ROTATE_MS = 2000;
+const IDLE_SUGGESTIONS = [
+  { text: "Upload your supplier list", icon: "fa-solid fa-list" },
+  { text: "Check if Avastin is in stock", icon: "fa-solid fa-cart-shopping" },
+  {
+    text: "Check if there's a better price for Xeomin",
+    icon: "fa-solid fa-hand-holding-dollar",
+  },
+  {
+    text: "What are some generic options for Restylane",
+    icon: "fa-solid fa-magnifying-glass",
+  },
+  { text: "What's the best product for Xeomin", icon: "fa-solid fa-thumbs-up" },
+];
 
 const isOpen = ref(false);
 const isResponding = ref(false);
@@ -142,11 +174,38 @@ const shouldAutoScroll = ref(true);
 const draftMessage = ref("");
 const messages = ref([]);
 const messagesContainerRef = ref(null);
+const idleSuggestionIndex = ref(0);
 
 let messageSequence = 1;
+let welcomeGreetingTimeoutId = null;
+let idleCarouselIntervalId = null;
 
 const canSend = computed(() => {
   return draftMessage.value.trim().length > 0 && !isResponding.value;
+});
+
+const hasUserMessage = computed(() => {
+  return messages.value.some((message) => message.role === "user");
+});
+
+const hasWelcomeGreetingMessage = computed(() => {
+  return messages.value.some(
+    (message) =>
+      message.role === "assistant" && message.content === WELCOME_MESSAGE_TEXT,
+  );
+});
+
+const showIdleSuggestion = computed(() => {
+  return isOpen.value && !hasUserMessage.value && IDLE_SUGGESTIONS.length > 0;
+});
+
+const currentIdleSuggestion = computed(() => {
+  return (
+    IDLE_SUGGESTIONS[idleSuggestionIndex.value] ?? {
+      text: "",
+      icon: "fa-solid fa-list",
+    }
+  );
 });
 
 function createMessage({ role, content, status = "done" }) {
@@ -164,6 +223,8 @@ function createMessage({ role, content, status = "done" }) {
 }
 
 function closeChatroom() {
+  clearWelcomeGreetingTimeout();
+  stopIdleSuggestionCarousel();
   isOpen.value = false;
 }
 
@@ -171,6 +232,15 @@ async function openChatroom() {
   isOpen.value = true;
   shouldAutoScroll.value = true;
   await scrollToBottom(true);
+
+  if (!hasUserMessage.value) {
+    startIdleSuggestionCarousel();
+    scheduleWelcomeGreeting();
+    return;
+  }
+
+  clearWelcomeGreetingTimeout();
+  stopIdleSuggestionCarousel();
 }
 
 function getRandomInteger(min, max) {
@@ -220,6 +290,71 @@ function addUserMessage(content) {
       content,
     }),
   );
+}
+
+function addAssistantMessage(content) {
+  messages.value.push(
+    createMessage({
+      role: "assistant",
+      content,
+    }),
+  );
+}
+
+function clearWelcomeGreetingTimeout() {
+  if (welcomeGreetingTimeoutId === null) {
+    return;
+  }
+
+  clearTimeout(welcomeGreetingTimeoutId);
+  welcomeGreetingTimeoutId = null;
+}
+
+function stopIdleSuggestionCarousel() {
+  if (idleCarouselIntervalId === null) {
+    return;
+  }
+
+  clearInterval(idleCarouselIntervalId);
+  idleCarouselIntervalId = null;
+}
+
+function startIdleSuggestionCarousel() {
+  stopIdleSuggestionCarousel();
+  idleSuggestionIndex.value = 0;
+
+  if (hasUserMessage.value || IDLE_SUGGESTIONS.length <= 1) {
+    return;
+  }
+
+  idleCarouselIntervalId = setInterval(() => {
+    if (hasUserMessage.value) {
+      stopIdleSuggestionCarousel();
+      return;
+    }
+
+    idleSuggestionIndex.value =
+      (idleSuggestionIndex.value + 1) % IDLE_SUGGESTIONS.length;
+  }, IDLE_SUGGESTION_ROTATE_MS);
+}
+
+function scheduleWelcomeGreeting() {
+  clearWelcomeGreetingTimeout();
+
+  if (hasUserMessage.value || hasWelcomeGreetingMessage.value) {
+    return;
+  }
+
+  welcomeGreetingTimeoutId = setTimeout(() => {
+    welcomeGreetingTimeoutId = null;
+
+    if (hasUserMessage.value || hasWelcomeGreetingMessage.value || !isOpen.value) {
+      return;
+    }
+
+    addAssistantMessage(WELCOME_MESSAGE_TEXT);
+    scrollToBottom(true);
+  }, WELCOME_MESSAGE_DELAY_MS);
 }
 
 function addAssistantThinkingMessage() {
@@ -274,6 +409,8 @@ async function sendMessage() {
   const prompt = draftMessage.value.trim();
   draftMessage.value = "";
 
+  clearWelcomeGreetingTimeout();
+  stopIdleSuggestionCarousel();
   addUserMessage(prompt);
   shouldAutoScroll.value = true;
   await scrollToBottom(true);
@@ -294,6 +431,11 @@ async function sendMessage() {
     isResponding.value = false;
   }
 }
+
+onBeforeUnmount(() => {
+  clearWelcomeGreetingTimeout();
+  stopIdleSuggestionCarousel();
+});
 </script>
 
 <style scoped>
@@ -322,6 +464,8 @@ async function sendMessage() {
 }
 
 .ai-chat-messages {
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   background-color: #ffffff;
   padding: 32px 20px;
@@ -369,6 +513,40 @@ async function sendMessage() {
   font-weight: 700;
 }
 
+.ai-chat-idle-suggestion {
+  margin-top: auto;
+  align-self: flex-start;
+  border: 1px solid #d6e5e5;
+  border-radius: 8px;
+  background-color: #ffffff;
+  padding: 10px 12px;
+  overflow: hidden;
+}
+
+.ai-chat-idle-suggestion-inner {
+  min-height: 22px;
+}
+
+.ai-chat-idle-suggestion-text {
+  color: #5e7074;
+  font-size: 16px;
+}
+
+.idle-suggestion-slide-enter-active,
+.idle-suggestion-slide-leave-active {
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.idle-suggestion-slide-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.idle-suggestion-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-14px);
+}
+
 @media (max-width: 900px) {
   .ai-chat-widget {
     right: 12px;
@@ -380,6 +558,10 @@ async function sendMessage() {
   .ai-chat-panel {
     width: 100%;
     height: min(78vh, 720px);
+  }
+
+  .ai-chat-idle-suggestion-text {
+    font-size: 14px;
   }
 }
 </style>
