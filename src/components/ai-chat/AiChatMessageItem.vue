@@ -9,12 +9,13 @@
     </div>
 
     <div v-else class="row items-start no-wrap q-gutter-sm">
-      <q-avatar
-        size="26px"
-        color="teal-700"
-        text-color="white"
-        icon="smart_toy"
-      />
+      <q-avatar size="24px" color="teal-700">
+        <img
+          alt="Quasar logo"
+          src="~assets/nitra-logo.svg"
+          style="width: 16px; height: 8px; border-radius: 0"
+        />
+      </q-avatar>
       <div
         class="ai-chat-bubble ai-chat-bubble--assistant bg-gray-0 text-dark q-pa-sm"
       >

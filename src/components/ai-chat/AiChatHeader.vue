@@ -3,7 +3,11 @@
     <div class="row items-start justify-between no-wrap">
       <div class="column">
         <div class="row items-center q-gutter-md">
-          <q-icon name="auto_awesome" size="22px" />
+          <img
+            alt="Quasar logo"
+            src="~assets/nitra-logo.svg"
+            style="width: 46px; height: 23px"
+          />
           <div class="ai-chat-title text-weight-bold">Nitra AI</div>
           <q-icon name="fa-solid fa-wand-magic-sparkles" size="24px" />
         </div>
