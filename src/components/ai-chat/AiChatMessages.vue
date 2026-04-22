@@ -5,9 +5,14 @@
     @scroll="$emit('scroll', $event)"
   >
     <AiChatMessageItem
-      v-for="message in messages"
+      v-for="(message, index) in messages"
       :key="message.id"
       :message="message"
+      :show-avatar="
+        message.role !== 'assistant' ||
+        index === 0 ||
+        messages[index - 1].role !== 'assistant'
+      "
     />
 
     <div v-if="showIdleSuggestion" class="ai-chat-idle-suggestion">

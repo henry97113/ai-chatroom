@@ -9,13 +9,14 @@
     </div>
 
     <div v-else class="row items-start no-wrap q-gutter-sm">
-      <q-avatar size="24px" color="teal-700">
+      <q-avatar v-if="showAvatar" size="24px" color="teal-700">
         <img
           alt="Quasar logo"
           src="~assets/nitra-logo.svg"
           style="width: 16px; height: 8px; border-radius: 0"
         />
       </q-avatar>
+      <div v-else class="ai-chat-avatar-spacer" />
       <div
         class="ai-chat-bubble ai-chat-bubble--assistant bg-gray-0 text-dark q-pa-sm"
       >
@@ -34,10 +35,19 @@ defineProps({
     type: Object,
     required: true,
   },
+  showAvatar: {
+    type: Boolean,
+    default: true,
+  },
 });
 </script>
 
 <style scoped>
+.ai-chat-avatar-spacer {
+  width: 24px;
+  min-width: 24px;
+}
+
 .ai-chat-bubble {
   max-width: min(92%, 560px);
   line-height: 1.45;
