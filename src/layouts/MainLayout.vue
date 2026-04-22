@@ -22,10 +22,13 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <AiChatWidget />
   </q-layout>
 </template>
 
 <script setup>
+import AiChatWidget from 'components/AiChatWidget.vue'
 import EssentialLink from 'components/EssentialLink.vue'
 
 const linksList = [
