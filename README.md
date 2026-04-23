@@ -2,6 +2,10 @@
 
 A floating AI chatroom widget built with **Vue 3** and **Quasar Framework**. The widget provides a mock-driven conversational experience with features like auto-scrolling, idle suggestion carousels, Markdown rendering, and grouped avatar display.
 
+## Demo
+
+https://github.com/user-attachments/assets/45f80cd2-4b95-495b-a996-adc99970ea0b
+
 ## File Structure
 
 ```
